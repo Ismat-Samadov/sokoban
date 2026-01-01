@@ -7,15 +7,12 @@ import { levels } from '@/lib/levels';
 // Helper function to initialize level (defined outside to avoid closure issues)
 function initializeLevel(levelIndex: number): GameState {
   const level = levels[levelIndex];
-  const boxes: Position[] = [];
   const targets: Position[] = [];
 
+  // Extract targets from the grid
   level.grid.forEach((row, y) => {
     row.forEach((tile, x) => {
-      if (tile === 'box' || tile === 'boxOnTarget') {
-        boxes.push({ x, y });
-      }
-      if (tile === 'target' || tile === 'boxOnTarget' || tile === 'playerOnTarget') {
+      if (tile === 'target') {
         targets.push({ x, y });
       }
     });
@@ -24,7 +21,7 @@ function initializeLevel(levelIndex: number): GameState {
   return {
     currentLevel: levelIndex,
     playerPosition: { ...level.playerStart },
-    boxes,
+    boxes: level.boxesStart.map(box => ({ ...box })),
     targets,
     grid: level.grid.map(row => [...row]),
     moves: 0,

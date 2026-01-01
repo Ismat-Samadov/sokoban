@@ -10,6 +10,7 @@ export interface Level {
   name: string;
   grid: TileType[][];
   playerStart: Position;
+  boxesStart: Position[];
 }
 
 export interface GameState {
