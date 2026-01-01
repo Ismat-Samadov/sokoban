@@ -50,82 +50,80 @@ export function useGameState() {
     }
   }, [gameState.currentLevel]);
 
-  const checkWin = useCallback((boxes: Position[], targets: Position[]): boolean => {
-    return targets.every(target =>
-      boxes.some(box => box.x === target.x && box.y === target.y)
-    );
-  }, []);
-
   const movePlayer = useCallback((direction: Direction) => {
-    if (gameState.isWon) return;
+    setGameState((prevState) => {
+      if (prevState.isWon) return prevState;
 
-    const { playerPosition, boxes, grid, moves } = gameState;
-    const delta = {
-      up: { x: 0, y: -1 },
-      down: { x: 0, y: 1 },
-      left: { x: -1, y: 0 },
-      right: { x: 1, y: 0 },
-    }[direction];
+      const { playerPosition, boxes, grid, moves, targets } = prevState;
+      const delta = {
+        up: { x: 0, y: -1 },
+        down: { x: 0, y: 1 },
+        left: { x: -1, y: 0 },
+        right: { x: 1, y: 0 },
+      }[direction];
 
-    const newPlayerPos: Position = {
-      x: playerPosition.x + delta.x,
-      y: playerPosition.y + delta.y,
-    };
-
-    // Check if new position is a wall
-    if (grid[newPlayerPos.y]?.[newPlayerPos.x] === 'wall') {
-      return;
-    }
-
-    // Check if there's a box at the new position
-    const boxIndex = boxes.findIndex(
-      box => box.x === newPlayerPos.x && box.y === newPlayerPos.y
-    );
-
-    if (boxIndex !== -1) {
-      // There's a box, check if we can push it
-      const newBoxPos: Position = {
-        x: newPlayerPos.x + delta.x,
-        y: newPlayerPos.y + delta.y,
+      const newPlayerPos: Position = {
+        x: playerPosition.x + delta.x,
+        y: playerPosition.y + delta.y,
       };
 
-      // Check if the box's new position is valid
-      if (grid[newBoxPos.y]?.[newBoxPos.x] === 'wall') {
-        return; // Can't push box into wall
+      // Check if new position is a wall
+      if (grid[newPlayerPos.y]?.[newPlayerPos.x] === 'wall') {
+        return prevState;
       }
 
-      // Check if there's another box at the new box position
-      const hasAnotherBox = boxes.some(
-        box => box.x === newBoxPos.x && box.y === newBoxPos.y
+      // Check if there's a box at the new position
+      const boxIndex = boxes.findIndex(
+        box => box.x === newPlayerPos.x && box.y === newPlayerPos.y
       );
 
-      if (hasAnotherBox) {
-        return; // Can't push box into another box
+      if (boxIndex !== -1) {
+        // There's a box, check if we can push it
+        const newBoxPos: Position = {
+          x: newPlayerPos.x + delta.x,
+          y: newPlayerPos.y + delta.y,
+        };
+
+        // Check if the box's new position is valid
+        if (grid[newBoxPos.y]?.[newBoxPos.x] === 'wall') {
+          return prevState; // Can't push box into wall
+        }
+
+        // Check if there's another box at the new box position
+        const hasAnotherBox = boxes.some(
+          box => box.x === newBoxPos.x && box.y === newBoxPos.y
+        );
+
+        if (hasAnotherBox) {
+          return prevState; // Can't push box into another box
+        }
+
+        // Move the box
+        const newBoxes = [...boxes];
+        newBoxes[boxIndex] = newBoxPos;
+
+        // Check win condition
+        const isWon = targets.every(target =>
+          newBoxes.some(box => box.x === target.x && box.y === target.y)
+        );
+
+        return {
+          ...prevState,
+          playerPosition: newPlayerPos,
+          boxes: newBoxes,
+          moves: moves + 1,
+          isWon,
+        };
+      } else {
+        // No box, just move the player
+        return {
+          ...prevState,
+          playerPosition: newPlayerPos,
+          moves: moves + 1,
+        };
       }
-
-      // Move the box
-      const newBoxes = [...boxes];
-      newBoxes[boxIndex] = newBoxPos;
-
-      // Check win condition
-      const isWon = checkWin(newBoxes, gameState.targets);
-
-      setGameState({
-        ...gameState,
-        playerPosition: newPlayerPos,
-        boxes: newBoxes,
-        moves: moves + 1,
-        isWon,
-      });
-    } else {
-      // No box, just move the player
-      setGameState({
-        ...gameState,
-        playerPosition: newPlayerPos,
-        moves: moves + 1,
-      });
-    }
-  }, [gameState, checkWin]);
+    });
+  }, []);
 
   // Keyboard controls
   useEffect(() => {
